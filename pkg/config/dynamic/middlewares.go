@@ -18,6 +18,7 @@ import (
 type Middleware struct {
 	AddPrefix         *AddPrefix         `json:"addPrefix,omitempty" toml:"addPrefix,omitempty" yaml:"addPrefix,omitempty"`
 	StripPrefix       *StripPrefix       `json:"stripPrefix,omitempty" toml:"stripPrefix,omitempty" yaml:"stripPrefix,omitempty"`
+	StripPrefixA      *StripPrefixA      `json:"stripPrefix,omitempty" toml:"stripPrefixA,omitempty" yaml:"stripPrefixA,omitempty"`
 	StripPrefixRegex  *StripPrefixRegex  `json:"stripPrefixRegex,omitempty" toml:"stripPrefixRegex,omitempty" yaml:"stripPrefixRegex,omitempty"`
 	ReplacePath       *ReplacePath       `json:"replacePath,omitempty" toml:"replacePath,omitempty" yaml:"replacePath,omitempty"`
 	ReplacePathRegex  *ReplacePathRegex  `json:"replacePathRegex,omitempty" toml:"replacePathRegex,omitempty" yaml:"replacePathRegex,omitempty"`
@@ -397,6 +398,19 @@ func (s *StripPrefix) SetDefaults() {
 // StripPrefixRegex holds the StripPrefixRegex configuration.
 type StripPrefixRegex struct {
 	Regex []string `json:"regex,omitempty" toml:"regex,omitempty" yaml:"regex,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// StripPrefix holds the StripPrefix configuration.
+type StripPrefixA struct {
+	Prefixes   []string `json:"prefixes,omitempty" toml:"prefixes,omitempty" yaml:"prefixes,omitempty"`
+	ForceSlash bool     `json:"forceSlash,omitempty" toml:"forceSlash,omitempty" yaml:"forceSlash,omitempty"` // Deprecated
+}
+
+// SetDefaults Default values for a StripPrefix.
+func (s *StripPrefixA) SetDefaults() {
+	s.ForceSlash = true
 }
 
 // +k8s:deepcopy-gen=true

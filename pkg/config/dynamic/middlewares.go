@@ -3,6 +3,7 @@ package dynamic
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,27 +18,28 @@ import (
 // Middleware holds the Middleware configuration.
 type Middleware struct {
 	AddPrefix         *AddPrefix         `json:"addPrefix,omitempty" toml:"addPrefix,omitempty" yaml:"addPrefix,omitempty"`
-	StripPrefix       *StripPrefix       `json:"stripPrefix,omitempty" toml:"stripPrefix,omitempty" yaml:"stripPrefix,omitempty"`
-	StripPrefixRegex  *StripPrefixRegex  `json:"stripPrefixRegex,omitempty" toml:"stripPrefixRegex,omitempty" yaml:"stripPrefixRegex,omitempty"`
-	ReplacePath       *ReplacePath       `json:"replacePath,omitempty" toml:"replacePath,omitempty" yaml:"replacePath,omitempty"`
-	ReplacePathRegex  *ReplacePathRegex  `json:"replacePathRegex,omitempty" toml:"replacePathRegex,omitempty" yaml:"replacePathRegex,omitempty"`
+	BasicAuth         *BasicAuth         `json:"basicAuth,omitempty" toml:"basicAuth,omitempty" yaml:"basicAuth,omitempty"`
+	Buffering         *Buffering         `json:"buffering,omitempty" toml:"buffering,omitempty" yaml:"buffering,omitempty"`
 	Chain             *Chain             `json:"chain,omitempty" toml:"chain,omitempty" yaml:"chain,omitempty"`
-	IPWhiteList       *IPWhiteList       `json:"ipWhiteList,omitempty" toml:"ipWhiteList,omitempty" yaml:"ipWhiteList,omitempty"`
-	Headers           *Headers           `json:"headers,omitempty" toml:"headers,omitempty" yaml:"headers,omitempty"`
+	CircuitBreaker    *CircuitBreaker    `json:"circuitBreaker,omitempty" toml:"circuitBreaker,omitempty" yaml:"circuitBreaker,omitempty"`
+	Compress          *Compress          `json:"compress,omitempty" toml:"compress,omitempty" yaml:"compress,omitempty" label:"allowEmpty"`
+	ContentType       *ContentType       `json:"contentType,omitempty" toml:"contentType,omitempty" yaml:"contentType,omitempty"`
+	DigestAuth        *DigestAuth        `json:"digestAuth,omitempty" toml:"digestAuth,omitempty" yaml:"digestAuth,omitempty"`
 	Errors            *ErrorPage         `json:"errors,omitempty" toml:"errors,omitempty" yaml:"errors,omitempty"`
+	ForwardAuth       *ForwardAuth       `json:"forwardAuth,omitempty" toml:"forwardAuth,omitempty" yaml:"forwardAuth,omitempty"`
+	Headers           *Headers           `json:"headers,omitempty" toml:"headers,omitempty" yaml:"headers,omitempty"`
+	IPWhiteList       *IPWhiteList       `json:"ipWhiteList,omitempty" toml:"ipWhiteList,omitempty" yaml:"ipWhiteList,omitempty"`
+	InFlightReq       *InFlightReq       `json:"inFlightReq,omitempty" toml:"inFlightReq,omitempty" yaml:"inFlightReq,omitempty"`
+	LoginGov          *LoginGov          `json:"logingov,omitempty" toml:"logingov,omitempty" yaml:"logingov,omitempty"`
+	PassTLSClientCert *PassTLSClientCert `json:"passTLSClientCert,omitempty" toml:"passTLSClientCert,omitempty" yaml:"passTLSClientCert,omitempty"`
 	RateLimit         *RateLimit         `json:"rateLimit,omitempty" toml:"rateLimit,omitempty" yaml:"rateLimit,omitempty"`
 	RedirectRegex     *RedirectRegex     `json:"redirectRegex,omitempty" toml:"redirectRegex,omitempty" yaml:"redirectRegex,omitempty"`
 	RedirectScheme    *RedirectScheme    `json:"redirectScheme,omitempty" toml:"redirectScheme,omitempty" yaml:"redirectScheme,omitempty"`
-	BasicAuth         *BasicAuth         `json:"basicAuth,omitempty" toml:"basicAuth,omitempty" yaml:"basicAuth,omitempty"`
-	DigestAuth        *DigestAuth        `json:"digestAuth,omitempty" toml:"digestAuth,omitempty" yaml:"digestAuth,omitempty"`
-	ForwardAuth       *ForwardAuth       `json:"forwardAuth,omitempty" toml:"forwardAuth,omitempty" yaml:"forwardAuth,omitempty"`
-	InFlightReq       *InFlightReq       `json:"inFlightReq,omitempty" toml:"inFlightReq,omitempty" yaml:"inFlightReq,omitempty"`
-	Buffering         *Buffering         `json:"buffering,omitempty" toml:"buffering,omitempty" yaml:"buffering,omitempty"`
-	CircuitBreaker    *CircuitBreaker    `json:"circuitBreaker,omitempty" toml:"circuitBreaker,omitempty" yaml:"circuitBreaker,omitempty"`
-	Compress          *Compress          `json:"compress,omitempty" toml:"compress,omitempty" yaml:"compress,omitempty" label:"allowEmpty"`
-	PassTLSClientCert *PassTLSClientCert `json:"passTLSClientCert,omitempty" toml:"passTLSClientCert,omitempty" yaml:"passTLSClientCert,omitempty"`
+	ReplacePath       *ReplacePath       `json:"replacePath,omitempty" toml:"replacePath,omitempty" yaml:"replacePath,omitempty"`
+	ReplacePathRegex  *ReplacePathRegex  `json:"replacePathRegex,omitempty" toml:"replacePathRegex,omitempty" yaml:"replacePathRegex,omitempty"`
 	Retry             *Retry             `json:"retry,omitempty" toml:"retry,omitempty" yaml:"retry,omitempty"`
-	ContentType       *ContentType       `json:"contentType,omitempty" toml:"contentType,omitempty" yaml:"contentType,omitempty"`
+	StripPrefix       *StripPrefix       `json:"stripPrefix,omitempty" toml:"stripPrefix,omitempty" yaml:"stripPrefix,omitempty"`
+	StripPrefixRegex  *StripPrefixRegex  `json:"stripPrefixRegex,omitempty" toml:"stripPrefixRegex,omitempty" yaml:"stripPrefixRegex,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -365,6 +367,65 @@ type ReplacePath struct {
 }
 
 // +k8s:deepcopy-gen=true
+
+// LoginGov holds the LoginGov configuration.
+type LoginGov struct {
+	EmailsFile string `json:"emailsFile,omitempty" toml:"emailsFile,omitempty" yaml:"emailsFile,omitempty"`
+
+	AuthUrl     string `json:"authUrl,omitempty" toml:"authUrl,omitempty" yaml:"authUrl,omitempty"`
+	TokenUrl    string `json:"tokenUrl,omitempty" toml:"tokenUrl,omitempty" yaml:"tokenUrl,omitempty"`
+	UserInfoUrl string `json:"userInfoUrl,omitempty" toml:"userInfoUrl,omitempty" yaml:"userInfoUrl,omitempty"`
+
+	AcrValues   string   `json:"acrValues,omitempty" toml:"acrValues,omitempty" yaml:"acrValues,omitempty"`
+	IssuerId    string   `json:"issuerId,omitempty" toml:"issuerId,omitempty" yaml:"issuerId,omitempty"`
+	LoginPath   string   `json:"loginPath,omitempty" toml:"loginPath,omitempty" yaml:"loginPath,omitempty"`
+	LogoutPath  string   `json:"logoutPath,omitempty" toml:"logoutPath,omitempty" yaml:"logoutPath,omitempty"`
+	RedirectUrl string   `json:"redirectUrl,omitempty" toml:"redirectUrl,omitempty" yaml:"redirectUrl,omitempty"`
+	Scopes      []string `json:"scopes,omitempty" toml:"scopes,omitempty" yaml:"scopes,omitempty"`
+
+	AuthPaths      []string `json:"authPaths,omitempty" toml:"authPaths,omitempty" yaml:"authPaths,omitempty"`
+	WhitelistPaths []string `json:"whitelistPaths,omitempty" toml:"whitelistPaths,omitempty" yaml:"whitelistPaths,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+func (l *LoginGov) CheckValues() error {
+	if l.IssuerId == "" {
+		return errors.New("issuerId cannot be empty")
+	}
+
+	if l.RedirectUrl == "" {
+		return errors.New("redirectUrl cannot be empty")
+	}
+
+	if l.AcrValues == "" {
+		return errors.New("acrValues cannot be empty")
+	}
+
+	if l.AuthUrl == "" {
+		return errors.New("authUrl cannot be empty")
+	}
+
+	if l.TokenUrl == "" {
+		return errors.New("tokenUrl cannot be empty")
+	}
+
+	if l.UserInfoUrl == "" {
+		return errors.New("userInfoUrl cannot be empty")
+	}
+
+	return nil
+}
+
+func (l *LoginGov) DefaultValuesIfBlank() {
+	if l.LoginPath == "" {
+		l.LoginPath = "/oauth/logingov/login"
+	}
+
+	if l.LogoutPath == "" {
+		l.LogoutPath = "/oauth/logingov/logout"
+	}
+}
 
 // ReplacePathRegex holds the ReplacePathRegex configuration.
 type ReplacePathRegex struct {

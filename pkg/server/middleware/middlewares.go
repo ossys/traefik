@@ -19,6 +19,7 @@ import (
 	"github.com/containous/traefik/v2/pkg/middlewares/headers"
 	"github.com/containous/traefik/v2/pkg/middlewares/inflightreq"
 	"github.com/containous/traefik/v2/pkg/middlewares/ipwhitelist"
+	"github.com/containous/traefik/v2/pkg/middlewares/logingov"
 	"github.com/containous/traefik/v2/pkg/middlewares/passtlsclientcert"
 	"github.com/containous/traefik/v2/pkg/middlewares/ratelimiter"
 	"github.com/containous/traefik/v2/pkg/middlewares/redirect"
@@ -113,6 +114,13 @@ func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (
 	if config.AddPrefix != nil {
 		middleware = func(next http.Handler) (http.Handler, error) {
 			return addprefix.New(ctx, next, *config.AddPrefix, middlewareName)
+		}
+	}
+
+	// LoginGov
+	if config.LoginGov != nil {
+		middleware = func(next http.Handler) (http.Handler, error) {
+			return logingov.New(ctx, next, *config.LoginGov, middlewareName)
 		}
 	}
 
